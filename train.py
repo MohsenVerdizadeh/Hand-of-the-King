@@ -30,7 +30,7 @@ def initialize_population(size):
 
 def evaluate_fitness(weights):
     wins = 0
-    games = 5
+    games = 10
     for _ in range(games):
         winner = simulate_game(weights)
         if winner == 1:
@@ -63,7 +63,7 @@ def mutate(offspring, mutation_rate=0.1):
     return offspring
 
 
-def genetic_algorithm(pop_size=6, generations=2):
+def genetic_algorithm(pop_size=20, generations=20):
     population = initialize_population(pop_size)
     with open("result.txt", "r") as file:
         temp = json.load(file)
