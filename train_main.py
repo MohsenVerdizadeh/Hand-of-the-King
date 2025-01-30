@@ -25,9 +25,11 @@ TIMEOUT = 10  # Time limit for the AI agent
 parser = argparse.ArgumentParser(description="A Game of Thrones: Hand of the King")
 parser.add_argument('--player1', metavar='p1', type=str, help="either human or an AI file", default='human')
 parser.add_argument('--player2', metavar='p2', type=str, help="either human or an AI file", default='human')
-parser.add_argument('-l', '--load', type=str, help="file containing starting board setup (for repeatability)", default=None)
+parser.add_argument('-l', '--load', type=str, help="file containing starting board setup (for repeatability)",
+                    default=None)
 parser.add_argument('-s', '--save', type=str, help="file to save board setup to", default=None)
 parser.add_argument('-v', '--video', type=str, help="name of the video file to save", default=None)
+
 
 def make_board():
     '''
@@ -42,12 +44,12 @@ def make_board():
     with open(join(path, "assets", "characters.json"), 'r') as file:
         characters = json.load(file)
 
-    companion_cards = characters['Companion'] # Dictionary of companion cards
+    companion_cards = characters['Companion']  # Dictionary of companion cards
 
     # Remove the companion cards from the dictionary
     del characters['Companion']
 
-    cards = [] # List to hold the cards
+    cards = []  # List to hold the cards
 
     for i in range(36):
         # Get a random character
@@ -64,6 +66,7 @@ def make_board():
         cards.append(card)
 
     return cards, companion_cards
+
 
 def save_board(cards, filename='board'):
     '''
@@ -82,6 +85,7 @@ def save_board(cards, filename='board'):
 
     with open(join(path, "boards", filename + ".json"), 'w') as file:
         json.dump(cards_json, file, indent=4)
+
 
 def load_board(filename='board'):
     '''
@@ -103,9 +107,10 @@ def load_board(filename='board'):
     with open(join(path, "assets", "characters.json"), 'r') as file:
         characters = json.load(file)
 
-    companion_cards = characters['Companion'] # Dictionary of companion cards
+    companion_cards = characters['Companion']  # Dictionary of companion cards
 
     return cards, companion_cards
+
 
 def find_varys(cards):
     '''
@@ -123,6 +128,7 @@ def find_varys(cards):
     varys_location = varys[0].get_location()
 
     return varys_location
+
 
 def get_possible_moves(cards):
     '''
@@ -154,6 +160,7 @@ def get_possible_moves(cards):
             moves.append(card.get_location())
 
     return moves
+
 
 def calculate_winner(player1, player2):
     '''
@@ -224,6 +231,7 @@ def calculate_winner(player1, player2):
         elif player2_banners['Tully'] > player1_banners['Tully']:
             return 2
 
+
 def find_card(cards, location):
     '''
     This function finds the card at the location.
@@ -239,6 +247,7 @@ def find_card(cards, location):
     for card in cards:
         if card.get_location() == location:
             return card
+
 
 def house_card_count(cards, house):
     '''
@@ -259,6 +268,7 @@ def house_card_count(cards, house):
             count += 1
 
     return count
+
 
 def make_move(cards, move, player):
     '''
@@ -295,28 +305,32 @@ def make_move(cards, move, player):
 
         # If the card is between Varys and the selected card and has the same house as the selected card
         if varys_row == move_row and varys_col < move_col:
-            if cards[i].get_location() // 6 == varys_row and varys_col < cards[i].get_location() % 6 < move_col and cards[i].get_house() == selected_card.get_house():
+            if cards[i].get_location() // 6 == varys_row and varys_col < cards[i].get_location() % 6 < move_col and \
+                    cards[i].get_house() == selected_card.get_house():
                 removing_cards.append(cards[i])
 
                 # Add the card to the player's cards
                 player.add_card(cards[i])
 
         elif varys_row == move_row and varys_col > move_col:
-            if cards[i].get_location() // 6 == varys_row and move_col < cards[i].get_location() % 6 < varys_col and cards[i].get_house() == selected_card.get_house():
+            if cards[i].get_location() // 6 == varys_row and move_col < cards[i].get_location() % 6 < varys_col and \
+                    cards[i].get_house() == selected_card.get_house():
                 removing_cards.append(cards[i])
 
                 # Add the card to the player's cards
                 player.add_card(cards[i])
 
         elif varys_col == move_col and varys_row < move_row:
-            if cards[i].get_location() % 6 == varys_col and varys_row < cards[i].get_location() // 6 < move_row and cards[i].get_house() == selected_card.get_house():
+            if cards[i].get_location() % 6 == varys_col and varys_row < cards[i].get_location() // 6 < move_row and \
+                    cards[i].get_house() == selected_card.get_house():
                 removing_cards.append(cards[i])
 
                 # Add the card to the player's cards
                 player.add_card(cards[i])
 
         elif varys_col == move_col and varys_row > move_row:
-            if cards[i].get_location() % 6 == varys_col and move_row < cards[i].get_location() // 6 < varys_row and cards[i].get_house() == selected_card.get_house():
+            if cards[i].get_location() % 6 == varys_col and move_row < cards[i].get_location() // 6 < varys_row and \
+                    cards[i].get_house() == selected_card.get_house():
                 removing_cards.append(cards[i])
 
                 # Add the card to the player's cards
@@ -338,6 +352,7 @@ def make_move(cards, move, player):
     # Return the selected card's house
     return selected_card.get_house()
 
+
 def make_companion_move(cards, companion_cards, move, player):
     '''
     This function makes the move of the companion card.
@@ -352,8 +367,8 @@ def make_companion_move(cards, companion_cards, move, player):
         house (str/None): house of the selected card
     '''
 
-    selected_companion = move[0] # Selected companion card
-    house = None # House of the selected card
+    selected_companion = move[0]  # Selected companion card
+    house = None  # House of the selected card
 
     if selected_companion == 'Jon':
         selected_card = move[1]
@@ -364,7 +379,7 @@ def make_companion_move(cards, companion_cards, move, player):
         # Get the house of the selected card
         selected_house = selected_card.get_house()
 
-        house = selected_house # Set the house
+        house = selected_house  # Set the house
 
         # Make a card
         card = Card(selected_house, 'Jon Snow', -1)
@@ -377,7 +392,7 @@ def make_companion_move(cards, companion_cards, move, player):
         # Make a card of the house Baratheon
         card = Card('Baratheon', 'Gendry', -1)
 
-        house = 'Baratheon' # Set the house
+        house = 'Baratheon'  # Set the house
 
         # Add the card to the player's cards
         player.add_card(card)
@@ -422,6 +437,7 @@ def make_companion_move(cards, companion_cards, move, player):
 
     return house
 
+
 def remove_unusable_companion_cards(cards, companion_cards):
     '''
     This function removes the companion cards that cannot be used.
@@ -434,18 +450,21 @@ def remove_unusable_companion_cards(cards, companion_cards):
     # Get the possible moves for the player
     moves = get_possible_moves(cards)
 
-    if 'Ramsay' in companion_cards.keys() and len(cards) < 2: # Ramsay needs at least two cards to swap
+    if 'Ramsay' in companion_cards.keys() and len(cards) < 2:  # Ramsay needs at least two cards to swap
         del companion_cards['Ramsay']
 
-    if 'Melisandre' in companion_cards.keys() and len(moves) == 0: # If there are no moves left, there is no point in using Melisandre
+    if 'Melisandre' in companion_cards.keys() and len(
+            moves) == 0:  # If there are no moves left, there is no point in using Melisandre
         del companion_cards['Melisandre']
 
     for companion in list(companion_cards.keys()):
-        if companion_cards[companion]['Choice'] > len(cards) - 1: # If the number of choices is more than the number of cards
+        if companion_cards[companion]['Choice'] > len(
+                cards) - 1:  # If the number of choices is more than the number of cards
             del companion_cards[companion]
 
-    if 'Jaqen' in companion_cards.keys() and len(companion_cards) == 1: # If Jaqen is the only companion card left
+    if 'Jaqen' in companion_cards.keys() and len(companion_cards) == 1:  # If Jaqen is the only companion card left
         del companion_cards['Jaqen']
+
 
 def set_banners(player1, player2, last_house, last_turn):
     '''
@@ -498,11 +517,11 @@ def set_banners(player1, player2, last_house, last_turn):
                     # Give the banner to player 2
                     selected_player = 2
 
-            else: # If the last card was not of the same house
-                if player1_banners[house] > player2_banners[house]: # If player 1 has more banners of the house
+            else:  # If the last card was not of the same house
+                if player1_banners[house] > player2_banners[house]:  # If player 1 has more banners of the house
                     selected_player = 1
 
-                elif player2_banners[house] > player1_banners[house]: # If player 2 has more banners of the house
+                elif player2_banners[house] > player1_banners[house]:  # If player 2 has more banners of the house
                     selected_player = 2
 
         # If player 1 should get the banner
@@ -534,22 +553,24 @@ def set_banners(player1, player2, last_house, last_turn):
 
             player1_status[house] = len(player1_cards[house]), 'White'
 
-        else: # If no player has the banner
+        else:  # If no player has the banner
             player2_status[house] = len(player2_cards[house]), 'White'
             player1_status[house] = len(player1_cards[house]), 'White'
 
     return player1_status, player2_status
+
 
 def clear_screen():
     '''
     This function clears the screen.
     '''
 
-    if os_name == 'nt': # Windows
+    if os_name == 'nt':  # Windows
         os_system('cls')
 
-    else: # Mac and Linux
+    else:  # Mac and Linux
         os_system('clear')
+
 
 def print_cards_status(player1_status, player2_status):
     '''
@@ -600,6 +621,7 @@ def print_cards_status(player1_status, player2_status):
     # Print a new line
     print()
 
+
 def validate_agent_move(cards, companion_cards, given_move):
     '''
     This function validates the move of the AI agent.
@@ -628,7 +650,7 @@ def validate_agent_move(cards, companion_cards, given_move):
     if given_move[0] == 'Jaqen' and given_move[0] == given_move[-1]:
         return False
 
-    number_of_occurrences = {} # Dictionary to keep track of the number of occurrences of the selected locations
+    number_of_occurrences = {}  # Dictionary to keep track of the number of occurrences of the selected locations
 
     # Get all possible locations
     locations = []
@@ -650,9 +672,10 @@ def validate_agent_move(cards, companion_cards, given_move):
         if given_move[i] in number_of_occurrences.keys():
             return False
 
-        number_of_occurrences[given_move[i]] = 1 # Add the location to the dictionary
+        number_of_occurrences[given_move[i]] = 1  # Add the location to the dictionary
 
-    return True # All checks passed
+    return True  # All checks passed
+
 
 def try_get_move(agent, cards, player1, player2, companion_cards, choose_companion):
     '''
@@ -682,6 +705,7 @@ def try_get_move(agent, cards, player1, player2, companion_cards, choose_compani
             move = None
 
     return move
+
 
 def main(args):
     '''
@@ -718,7 +742,7 @@ def main(args):
     clear_screen()
 
     # Draw the board
-    pygraphics.draw_board(board, cards, companion_cards,  '0', None)
+    pygraphics.draw_board(board, cards, companion_cards, '0', None)
 
     # Show the initial board for 2 seconds
     pygraphics.show_board(2)
@@ -761,7 +785,7 @@ def main(args):
     player2 = Player(args.player2)
 
     # Set up the turn
-    turn = 1 # 1: player 1's turn, 2: player 2's turn
+    turn = 1  # 1: player 1's turn, 2: player 2's turn
 
     # Draw the board
     pygraphics.draw_board(board, cards, companion_cards, '1')
@@ -783,8 +807,7 @@ def main(args):
 
             # Show the board for 5 seconds
             pygraphics.show_board(5)
-
-            break
+            return winner
 
         # Get the player's move
         if turn == 1:
@@ -819,15 +842,17 @@ def main(args):
         if choose_companion:
             # Check if the move is valid
             if move[0] in companion_cards.keys():
-                choices = companion_cards[move[0]]['Choice'] # Number of choices for the companion card
+                choices = companion_cards[move[0]]['Choice']  # Number of choices for the companion card
 
                 # If the player is human, get the selected cards
                 if (turn == 1 and player1_agent is None) or (turn == 2 and player2_agent is None):
-                    selectable_cards = [] # List to hold the selectable cards
-                    selectable_companion_cards = {key: value for key, value in companion_cards.items() if key != move[0]} # Dictionary to hold the selectable companion cards
+                    selectable_cards = []  # List to hold the selectable cards
+                    selectable_companion_cards = {key: value for key, value in companion_cards.items() if
+                                                  key != move[0]}  # Dictionary to hold the selectable companion cards
 
                     for card in cards:
-                        if card.get_name() == 'Varys' and move[0] == 'Ramsay': # Ramsay can change the location of two cards
+                        if card.get_name() == 'Varys' and move[
+                            0] == 'Ramsay':  # Ramsay can change the location of two cards
                             selectable_cards.append(card.get_location())
 
                         elif card.get_name() != 'Varys':
@@ -842,21 +867,24 @@ def main(args):
 
                         # Draw the board
                         if turn == 1:
-                            pygraphics.draw_board(board, cards, selectable_companion_cards, footer_text, companion_selecting_condition)
+                            pygraphics.draw_board(board, cards, selectable_companion_cards, footer_text,
+                                                  companion_selecting_condition)
 
                         else:
-                            pygraphics.draw_board(board, cards, selectable_companion_cards, footer_text, companion_selecting_condition)
+                            pygraphics.draw_board(board, cards, selectable_companion_cards, footer_text,
+                                                  companion_selecting_condition)
 
                         # Wait for the player to make a move with the mouse
-                        selected = pygraphics.get_player_move(selectable_cards, selectable_companion_cards if companion_selecting_condition else None)
+                        selected = pygraphics.get_player_move(selectable_cards,
+                                                              selectable_companion_cards if companion_selecting_condition else None)
 
                         if not companion_selecting_condition:
-                            selectable_cards.remove(selected) # Remove the selected card from the list
+                            selectable_cards.remove(selected)  # Remove the selected card from the list
 
                         else:
-                            selected = selected[0] # Get the selected card
+                            selected = selected[0]  # Get the selected card
 
-                        move.append(selected) # Add the selected card to the list
+                        move.append(selected)  # Add the selected card to the list
 
                 elif not validate_agent_move(cards, companion_cards, move):
                     continue
@@ -871,7 +899,8 @@ def main(args):
                 remove_unusable_companion_cards(cards, companion_cards)
 
                 # Set the banners for the players
-                player1_status, player2_status = set_banners(player1, player2, is_house if is_house is not None else selected_house, turn)
+                player1_status, player2_status = set_banners(player1, player2,
+                                                             is_house if is_house is not None else selected_house, turn)
 
                 # Print the status of the cards
                 print_cards_status(player1_status, player2_status)
@@ -881,7 +910,7 @@ def main(args):
                     # Change the turn
                     turn = 2 if turn == 1 else 1
 
-                choose_companion = False # Reset the flag
+                choose_companion = False  # Reset the flag
 
             # Draw the board
             if turn == 1:
@@ -909,20 +938,22 @@ def main(args):
 
             # If there are no cards of the house and there are companion cards left
             if house_card_count(cards, selected_house) == 0 and len(companion_cards) != 0:
-                choose_companion = True # Player must choose a companion card
+                choose_companion = True  # Player must choose a companion card
 
             else:
                 # Change the turn
                 turn = 2 if turn == 1 else 1
 
-                choose_companion = False # Reset the flag
+                choose_companion = False  # Reset the flag
 
             # Draw the board
             if turn == 1:
-                pygraphics.draw_board(board, cards, companion_cards, 'CC' if choose_companion else '1', choose_companion)
+                pygraphics.draw_board(board, cards, companion_cards, 'CC' if choose_companion else '1',
+                                      choose_companion)
 
             else:
-                pygraphics.draw_board(board, cards, companion_cards, 'CC' if choose_companion else '2', choose_companion)
+                pygraphics.draw_board(board, cards, companion_cards, 'CC' if choose_companion else '2',
+                                      choose_companion)
 
             # Show the board for 0.5 seconds
             pygraphics.show_board(0.5)
@@ -930,9 +961,9 @@ def main(args):
     # Close the board
     pygraphics.close_board()
 
-    file_name = args.video # Name of the video file
+    file_name = args.video  # Name of the video file
 
-    if file_name is None: # If not provided
+    if file_name is None:  # If not provided
         # Set the name of the video file as Agent1_vs_Agent2
         if player1.get_agent() != 'human':
             file_name = player1.get_agent()[max(0, player1.get_agent().find('/'), player1.get_agent().find('\\')):]
@@ -949,10 +980,11 @@ def main(args):
             file_name += player2.get_agent()
 
     try:
-        pygraphics.save_video(file_name) # Save the video of the game
+        pygraphics.save_video(file_name)  # Save the video of the game
 
     except:
         print("Error saving video.")
+
 
 if __name__ == "__main__":
     main(parser.parse_args())
