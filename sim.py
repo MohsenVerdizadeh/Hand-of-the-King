@@ -8,7 +8,6 @@ from os.path import abspath, join, dirname
 import sys
 import json
 import copy
-from time import sleep
 
 # Add the utils folder to the path
 sys.path.append(join(dirname(abspath(__file__)), "utils"))
@@ -64,50 +63,6 @@ def make_board():
         card = Card(house, name, i)
 
         cards.append(card)
-
-    return cards, companion_cards
-
-
-def save_board(cards, filename='board'):
-    '''
-    This function saves the board to a file.
-
-    Parameters:
-        cards (list): list of Card objects
-        filename (str): name of the file to save the board to
-    '''
-
-    cards_json = []
-
-    for card in cards:
-        card_json = {'house': card.get_house(), 'name': card.get_name(), 'location': card.get_location()}
-        cards_json.append(card_json)
-
-    with open(join(path, "boards", filename + ".json"), 'w') as file:
-        json.dump(cards_json, file, indent=4)
-
-
-def load_board(filename='board'):
-    '''
-    This function loads the board from a file.
-
-    Parameters:
-        filename (str): name of the file to load the board from
-
-    Returns:
-        cards (list): list of Card objects
-        companion_cards (dict): dictionary of companion cards
-    '''
-
-    with open(join(path, "boards", filename + ".json"), 'r') as file:
-        cards = json.load(file)
-
-    cards = [Card(card['house'], card['name'], card['location']) for card in cards]
-
-    with open(join(path, "assets", "characters.json"), 'r') as file:
-        characters = json.load(file)
-
-    companion_cards = characters['Companion']  # Dictionary of companion cards
 
     return cards, companion_cards
 
@@ -707,80 +662,54 @@ def try_get_move(agent, cards, player1, player2, companion_cards, choose_compani
     return move
 
 
-def main(args):
+def try_get_move_agent(agent, cards, player1, player2, companion_cards, choose_companion, weights):
     '''
-    This function runs the game.
+    This function tries to get the move from the AI agent.
 
     Parameters:
-        args (Namespace): command line arguments
+        agent (module): AI agent
+        cards (list): list of Card objects
+        player1 (Player): player 1
+        player2 (Player): player 2
+        companion_cards (dict): dictionary of companion cards
+        choose_companion (bool): flag to choose a companion card
+
+    Returns:
+        move (int/list): move from the AI agent
     '''
-    if args.load:
+
+    # Try to get the move from the AI agent in TIMEOUT seconds
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future = executor.submit(agent.get_move, copy.deepcopy(cards), copy.deepcopy(player1),
+                                 copy.deepcopy(player2), copy.deepcopy(companion_cards), choose_companion, weights)
+
         try:
-            # Load the board from the file
-            cards, companion_cards = load_board(args.load)
+            move = future.result(timeout=TIMEOUT)
 
-        except FileNotFoundError:
-            print("File not found. Creating a new board.")
-            cards, companion_cards = make_board()
+        except concurrent.futures.TimeoutError:
+            move = None
 
-    else:
-        # Create a new board
-        cards, companion_cards = make_board()
+    return move
 
-    if args.save:
-        try:
-            # Save the board to the file
-            save_board(cards, args.save)
 
-        except:
-            print("Error saving board.")
+def simulate(weights):
+    '''
+    This function simulates the game.
 
-    # Set up the graphics
-    # Clear the screen
-    # Draw the board
-    # Show the initial board for 2 seconds
+    Parameters:
+        weights : weights for minimax
+    '''
 
-    # Check if the players are human or AI
-    if args.player1 == 'human':
-        player1_agent = None
-
-    else:
-        # Check if the AI file exists
-        try:
-            player1_agent = importlib.import_module(args.player1)
-
-        except ImportError:
-            print("AI file not found.")
-            return
-
-        if not hasattr(player1_agent, 'get_move'):
-            print("AI file does not have the get_move function.")
-            return
-
-    if args.player2 == 'human':
-        player2_agent = None
-
-    else:
-        # Check if the AI file exists
-        try:
-            player2_agent = importlib.import_module(args.player2)
-
-        except ImportError:
-            print("AI file not found.")
-            return
-
-        if not hasattr(player2_agent, 'get_move'):
-            print("AI file does not have the get_move function.")
-            return
+    cards, companion_cards = make_board()
+    player1_agent = importlib.import_module('minimax_agent')
+    player2_agent = importlib.import_module('random_agent')
 
     # Set up the players
-    player1 = Player(args.player1)
-    player2 = Player(args.player2)
+    player1 = Player('minimax_agent')
+    player2 = Player('random_agent')
 
     # Set up the turn
     turn = 1  # 1: player 1's turn, 2: player 2's turn
-
-    # Draw the board
 
     # Set Choose Companion flag
     choose_companion = False
@@ -794,25 +723,22 @@ def main(args):
             # Get the winner of the game
             winner = calculate_winner(player1, player2)
 
-            # Display the winner
-
+            # 1 if minimax won and 2 if random_agent won
             return winner
+            break
 
-        # Get the player's move
+        # Get the agent's move
         if turn == 1:
-            # Check if the player is human or AI
 
-            # Get the move from the AI agent
-            move = try_get_move(player1_agent, cards, player1, player2, companion_cards, choose_companion)
+            move = try_get_move_agent(player1_agent, cards, player1, player2, companion_cards, choose_companion,
+                                      weights)
 
             # If the move is None, change the turn
             if move is None:
                 turn = 2
 
         else:
-            # Check if the player is human or AI
 
-            # Get the move from the AI agent
             move = try_get_move(player2_agent, cards, player1, player2, companion_cards, choose_companion)
 
             # If the move is None, change the turn
@@ -825,8 +751,6 @@ def main(args):
             if len(move) != 0:
                 if move[0] in companion_cards.keys():
                     choices = companion_cards[move[0]]['Choice']  # Number of choices for the companion card
-
-                    # If the player is human, get the selected cards
 
                     if not validate_agent_move(cards, companion_cards, move):
                         continue
@@ -855,9 +779,6 @@ def main(args):
 
                     choose_companion = False  # Reset the flag
 
-            # Draw the board
-
-
         # Check if the move is valid
         if move in moves:
             # Make the move
@@ -883,8 +804,10 @@ def main(args):
                 choose_companion = False  # Reset the flag
 
 
-
-    # Close the board
-
 if __name__ == "__main__":
-    main(parser.parse_args())
+    output = simulate({
+        "w1": 1.0,
+        "w2": 2.0,
+        "companion": 4.0,
+    })
+    print(f"WINNER = {output}")

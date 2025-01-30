@@ -63,7 +63,7 @@ def mutate(offspring, mutation_rate=0.1):
     return offspring
 
 
-def genetic_algorithm(pop_size=20, generations=20):
+def genetic_algorithm(pop_size=10, generations=5):
     population = initialize_population(pop_size)
     with open("result.txt", "r") as file:
         temp = json.load(file)
