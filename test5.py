@@ -38,11 +38,11 @@ def calculate_adaptive_depth(cards, companion_cards, base_depth=6, max_depth=10)
     num_moves = len(get_valid_moves(cards))
     num_companions = len(companion_cards)
 
-    if num_moves > 7:  # Early game: lots of options → search shallow
+    if num_moves > 7 or len(cards) > 25:  # Early game: lots of options → search shallow
         return base_depth
-    elif num_moves > 5:  # Mid game: fewer options → search deeper
+    elif num_moves > 5 or len(cards) > 15:  # Mid game: fewer options → search deeper
         return min(base_depth + 1, max_depth)
-    elif num_moves > 3:  # Late game: deeper search
+    elif num_moves > 3 or len(cards) > 10:  # Late game: deeper search
         return min(base_depth + 2, max_depth)
     else:  # Endgame: search as deep as possible
         return max_depth
@@ -59,8 +59,7 @@ def heuristic(player1, player2):
     with open("weights.txt", "r") as file:
         weights = json.load(file)
     return (weights[0] * heuristic1(player1, player2) +
-            weights[1] * heuristic2(player1, player2) +
-            weights[2] * heuristic3(player1, player2))
+            weights[1] * heuristic2(player1, player2))
 
 
 def heuristic1(player1, player2):
@@ -116,17 +115,6 @@ def heuristic2(player1, player2):
     w2 = 7
 
     return (s1 * w1) + (s2 * w2) + p1p2_house_wise_card_difference
-
-
-def heuristic3(player1, player2):
-    player1_banners = player1.get_banners()
-    player2_banners = player2.get_banners()
-
-    # Calculate the scores of the players
-    player1_score = sum(player1_banners.values())
-    player2_score = sum(player2_banners.values())
-
-    return player1_score - player2_score
 
 
 def find_card(cards, location):
@@ -344,7 +332,7 @@ def companion_get_move(cards, player1, player2, companion_cards):
     if companion_cards:
         if len(companion_cards) == 2 and 'Jaqen' in companion_cards.keys() and 'Melisandre' in companion_cards.keys():
             print("flag")
-            return 1,['Melisandre']
+            return 1, ['Melisandre']
 
         available_companions = companion_cards
         best_move = None
@@ -441,7 +429,7 @@ def companion_get_move(cards, player1, player2, companion_cards):
                         current_eval, _ = alpha_beta_search(new_cards, player1, player2, new_companion_cards, 1,
                                                             float("-inf"), float("inf"),
                                                             False)
-
+                        # current_eval = heuristic2(player1, player2)
                         if current_eval > best_eval:
                             best_eval = current_eval
                             best_move = ['Jaqen', kill1, kill2, comp_remove]

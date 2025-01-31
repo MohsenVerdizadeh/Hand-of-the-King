@@ -18,17 +18,14 @@ def simulate_game(weights):
                                  Namespace(player1='test5', player2='test3', load=None, save=None, video=None)
                                  )
         try:
-            return future.result(timeout=200)
+            return future.result(timeout=130)
         except:
             simulate_game(weights)
 
 
 def initialize_population(size):
-    result = []
-    for _ in range(size):
-        x = random.uniform(0, 1)
-        result.append([1 - x, x])
-    return result
+    temp = [[random.uniform(0, 1) for _ in range(3)] for _ in range(size)]
+    return temp
 
 
 def evaluate_fitness(weights):
@@ -66,14 +63,24 @@ def mutate(offspring, mutation_rate=0.1):
     return offspring
 
 
-def genetic_algorithm(pop_size=10, generations=4):
-    population = initialize_population(pop_size)
+def genetic_algorithm(pop_size=10, generations=5):
+
+    fitness_scores = [4,5,5,4,3,4,4,7,5,2]
+    with open("result.txt", "r") as file:
+        population = json.load(file)[0]
+    parents = select_parents(population, fitness_scores, pop_size // 2)
+    offspring = crossover(parents, pop_size - len(parents))
+    offspring = mutate(offspring)
+    population = parents + offspring
     with open("result.txt", "r") as file:
         temp = json.load(file)
     temp.append(population)
     with open("result.txt", "w") as file:
         json.dump(temp, file)
-    for gen in range(generations):
+        file.flush()
+    with open("res.txt", "a") as file:
+        file.write("----------------------------\n")
+    for gen in range(generations-1):
         fitness_scores = [evaluate_fitness(weights) for weights in population]
         parents = select_parents(population, fitness_scores, pop_size // 2)
         offspring = crossover(parents, pop_size - len(parents))

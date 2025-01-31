@@ -736,9 +736,16 @@ def main(args):
             print("Error saving board.")
 
     # Set up the graphics
+    board = pygraphics.init_board()
+
     # Clear the screen
+    clear_screen()
+
     # Draw the board
+    pygraphics.draw_board(board, cards, companion_cards, '0', None)
+
     # Show the initial board for 2 seconds
+    pygraphics.show_board(2)
 
     # Check if the players are human or AI
     if args.player1 == 'human':
@@ -781,6 +788,7 @@ def main(args):
     turn = 1  # 1: player 1's turn, 2: player 2's turn
 
     # Draw the board
+    pygraphics.draw_board(board, cards, companion_cards, '1')
 
     # Set Choose Companion flag
     choose_companion = False
@@ -795,68 +803,123 @@ def main(args):
             winner = calculate_winner(player1, player2)
 
             # Display the winner
+            pygraphics.display_winner(board, winner, player1.get_agent() if winner == 1 else player2.get_agent())
 
+            # Show the board for 5 seconds
+            pygraphics.show_board(5)
             return winner
-
         # Get the player's move
         if turn == 1:
             # Check if the player is human or AI
+            if player1_agent is None:
+                # Wait for the player to make a move with the mouse
+                move = pygraphics.get_player_move(moves, companion_cards if choose_companion else None)
 
-            # Get the move from the AI agent
-            move = try_get_move(player1_agent, cards, player1, player2, companion_cards, choose_companion)
+            else:
+                # Get the move from the AI agent
+                move = try_get_move(player1_agent, cards, player1, player2, companion_cards, choose_companion)
 
-            # If the move is None, change the turn
-            if move is None:
-                turn = 2
+                # If the move is None, change the turn
+                if move is None:
+                    turn = 2
 
         else:
             # Check if the player is human or AI
+            if player2_agent is None:
+                # Wait for the player to make a move with the mouse
+                move = pygraphics.get_player_move(moves, companion_cards if choose_companion else None)
 
-            # Get the move from the AI agent
-            move = try_get_move(player2_agent, cards, player1, player2, companion_cards, choose_companion)
+            else:
+                # Get the move from the AI agent
+                move = try_get_move(player2_agent, cards, player1, player2, companion_cards, choose_companion)
 
-            # If the move is None, change the turn
-            if move is None:
-                turn = 1
+                # If the move is None, change the turn
+                if move is None:
+                    turn = 1
 
         # If the move is companion card
         if choose_companion:
             # Check if the move is valid
-            if len(move) != 0:
-                if move[0] in companion_cards.keys():
-                    choices = companion_cards[move[0]]['Choice']  # Number of choices for the companion card
+            if move[0] in companion_cards.keys():
+                choices = companion_cards[move[0]]['Choice']  # Number of choices for the companion card
 
-                    # If the player is human, get the selected cards
+                # If the player is human, get the selected cards
+                if (turn == 1 and player1_agent is None) or (turn == 2 and player2_agent is None):
+                    selectable_cards = []  # List to hold the selectable cards
+                    selectable_companion_cards = {key: value for key, value in companion_cards.items() if
+                                                  key != move[0]}  # Dictionary to hold the selectable companion cards
 
-                    if not validate_agent_move(cards, companion_cards, move):
-                        continue
+                    for card in cards:
+                        if card.get_name() == 'Varys' and move[
+                            0] == 'Ramsay':  # Ramsay can change the location of two cards
+                            selectable_cards.append(card.get_location())
 
-                    # Remove the companion card from the list
-                    del companion_cards[move[0]]
+                        elif card.get_name() != 'Varys':
+                            selectable_cards.append(card.get_location())
 
-                    # Make the companion move
-                    is_house = make_companion_move(cards, companion_cards, move, player1 if turn == 1 else player2)
+                    for i in range(choices):
+                        # Condition for selecting a companion card
+                        companion_selecting_condition = (move[0] == 'Jaqen' and i + 1 == choices)
 
-                    # Remove the companion cards that cannot be used
-                    remove_unusable_companion_cards(cards, companion_cards)
+                        # Set the footer's text
+                        footer_text = 'CC' if companion_selecting_condition else f'BC{i + 1}'
 
-                    # Set the banners for the players
-                    player1_status, player2_status = set_banners(player1, player2,
-                                                                 is_house if is_house is not None else selected_house,
-                                                                 turn)
+                        # Draw the board
+                        if turn == 1:
+                            pygraphics.draw_board(board, cards, selectable_companion_cards, footer_text,
+                                                  companion_selecting_condition)
 
-                    # Print the status of the cards
-                    print_cards_status(player1_status, player2_status)
+                        else:
+                            pygraphics.draw_board(board, cards, selectable_companion_cards, footer_text,
+                                                  companion_selecting_condition)
 
-                    # Melisandre gives the player another turn
-                    if move[0] != 'Melisandre':
-                        # Change the turn
-                        turn = 2 if turn == 1 else 1
+                        # Wait for the player to make a move with the mouse
+                        selected = pygraphics.get_player_move(selectable_cards,
+                                                              selectable_companion_cards if companion_selecting_condition else None)
 
-                    choose_companion = False  # Reset the flag
+                        if not companion_selecting_condition:
+                            selectable_cards.remove(selected)  # Remove the selected card from the list
+
+                        else:
+                            selected = selected[0]  # Get the selected card
+
+                        move.append(selected)  # Add the selected card to the list
+
+                elif not validate_agent_move(cards, companion_cards, move):
+                    continue
+
+                # Remove the companion card from the list
+                del companion_cards[move[0]]
+
+                # Make the companion move
+                is_house = make_companion_move(cards, companion_cards, move, player1 if turn == 1 else player2)
+
+                # Remove the companion cards that cannot be used
+                remove_unusable_companion_cards(cards, companion_cards)
+
+                # Set the banners for the players
+                player1_status, player2_status = set_banners(player1, player2,
+                                                             is_house if is_house is not None else selected_house, turn)
+
+                # Print the status of the cards
+                print_cards_status(player1_status, player2_status)
+
+                # Melisandre gives the player another turn
+                if move[0] != 'Melisandre':
+                    # Change the turn
+                    turn = 2 if turn == 1 else 1
+
+                choose_companion = False  # Reset the flag
 
             # Draw the board
+            if turn == 1:
+                pygraphics.draw_board(board, cards, companion_cards, '1', choose_companion)
 
+            else:
+                pygraphics.draw_board(board, cards, companion_cards, '2', choose_companion)
+
+            # Show the board for 0.5 seconds
+            pygraphics.show_board(0.5)
 
         # Check if the move is valid
         if move in moves:
@@ -882,9 +945,45 @@ def main(args):
 
                 choose_companion = False  # Reset the flag
 
+            # Draw the board
+            if turn == 1:
+                pygraphics.draw_board(board, cards, companion_cards, 'CC' if choose_companion else '1',
+                                      choose_companion)
 
+            else:
+                pygraphics.draw_board(board, cards, companion_cards, 'CC' if choose_companion else '2',
+                                      choose_companion)
+
+            # Show the board for 0.5 seconds
+            pygraphics.show_board(0.5)
 
     # Close the board
+    pygraphics.close_board()
+
+    file_name = args.video  # Name of the video file
+
+    if file_name is None:  # If not provided
+        # Set the name of the video file as Agent1_vs_Agent2
+        if player1.get_agent() != 'human':
+            file_name = player1.get_agent()[max(0, player1.get_agent().find('/'), player1.get_agent().find('\\')):]
+
+        else:
+            file_name = player1.get_agent()
+
+        file_name += '_vs_'
+
+        if player2.get_agent() != 'human':
+            file_name += player2.get_agent()[max(0, player2.get_agent().find('/'), player2.get_agent().find('\\')):]
+
+        else:
+            file_name += player2.get_agent()
+
+    try:
+        pygraphics.save_video(file_name)  # Save the video of the game
+
+    except:
+        print("Error saving video.")
+
 
 if __name__ == "__main__":
     main(parser.parse_args())
