@@ -7,23 +7,6 @@ from itertools import combinations, permutations
 
 from main import remove_unusable_companion_cards, house_card_count
 
-temp = {
-    "Stark": 8,
-    "Greyjoy": 7,
-    "Lannister": 6,
-    "Targaryen": 5,
-    "Baratheon": 4,
-    "Tyrell": 3,
-    "Tully": 2,
-}
-
-
-def is_terminal(cards, depth, list1, list2):
-    if len(get_valid_moves(cards, list1, list2)) == 0 or depth == 0:
-        return True
-    return False
-
-
 def calculate_adaptive_depth(cards, companion_cards, base_depth=6, max_depth=10):
     """
     Dynamically adjusts the depth based on game complexity.
@@ -45,24 +28,6 @@ def calculate_adaptive_depth(cards, companion_cards, base_depth=6, max_depth=10)
         return min(base_depth + 2, max_depth)
     else:  # Endgame: search as deep as possible
         return max_depth
-
-
-def test(player):
-    score = 0
-    for house, people in player.get_cards().items():
-        score += (len(people) / temp[house])
-    return score
-
-
-def heuristic(player1, player2):
-    pass
-
-
-def heuristic1(player1, player2):
-    player1_score = test(player1)
-    player2_score = test(player2)
-    return player1_score - player2_score
-
 
 def heuristic2(player1, player2):
     # Simple evaluation: maximize player's cards minus opponent's cards
@@ -111,18 +76,6 @@ def heuristic2(player1, player2):
     w2 = 7
 
     return (s1 * w1) + (s2 * w2) + p1p2_house_wise_card_difference
-
-
-def heuristic3(player1, player2):
-    player1_banners = player1.get_banners()
-    player2_banners = player2.get_banners()
-
-    # Calculate the scores of the players
-    player1_score = sum(player1_banners.values())
-    player2_score = sum(player2_banners.values())
-
-    return player1_score - player2_score
-
 
 def find_card(cards, location):
     for card in cards:
@@ -286,7 +239,7 @@ def get_valid_moves(cards):
 def alpha_beta_search(cards, player1, player2, companion_cards, depth, alpha, beta, is_maximizing):
     moves = get_valid_moves(cards)
     if depth == 0 or not moves:
-        return heuristic1(player1, player2), None
+        return heuristic2(player1, player2), None
     best_move = None
     if is_maximizing:
         max_value = float('-inf')
@@ -340,11 +293,6 @@ def companion_get_move(cards, player1, player2, companion_cards):
         best_move = None
         best_eval = float('-inf')
 
-        # Helper function to evaluate a simulated state
-        def evaluate_simulation(new_cards, new_p1, new_p2):
-            # Update banners based on new card positions (if necessary)
-            # This might require recalculating banners similar to how set_banners works
-            return heuristic1(new_p1, new_p2)
 
         # Check each available companion
         for companion in available_companions:

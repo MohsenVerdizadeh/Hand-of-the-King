@@ -561,7 +561,7 @@ def print_cards_status(player1_status, player2_status):
     '''
 
     # Clear the screen
-    clear_screen()
+    # clear_screen()
 
     # Print the status of the cards
     print("Player 1 cards status:", end=' ')

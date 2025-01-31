@@ -13,22 +13,22 @@ def simulate_game(weights):
         json.dump(weights, file)
         file.flush()
     game = importlib.import_module("train_main")
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future = executor.submit(game.main,
-                                 Namespace(player1='test5', player2='test3', load=None, save=None, video=None)
-                                 )
-        try:
-            return future.result(timeout=200)
-        except:
-            simulate_game(weights)
+    while True:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(game.main,
+                                     Namespace(player1='test5', player2='test6', load=None, save=None, video=None)
+                                     )
+            try:
+                result = future.result(timeout=200)
+                break
+            except:
+                continue
+    return result
 
 
 def initialize_population(size):
-    result = []
-    for _ in range(size):
-        x = random.uniform(0, 1)
-        result.append([1 - x, x])
-    return result
+    return [[random.uniform(0, 1) for _ in range(3)] for _ in range(size)]
+
 
 
 def evaluate_fitness(weights):
@@ -66,7 +66,7 @@ def mutate(offspring, mutation_rate=0.1):
     return offspring
 
 
-def genetic_algorithm(pop_size=10, generations=4):
+def genetic_algorithm(pop_size=10, generations=5):
     population = initialize_population(pop_size)
     with open("result.txt", "r") as file:
         temp = json.load(file)
@@ -93,4 +93,7 @@ def genetic_algorithm(pop_size=10, generations=4):
 
 # Train the AI with Genetic Algorithm
 best_weights = genetic_algorithm()
+with open("res.txt", "a") as file:
+    file.write("----------------------------\n")
+    file.write(best_weights)
 print("Optimized Weights:", best_weights)

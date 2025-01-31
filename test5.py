@@ -58,14 +58,68 @@ def test(player):
 def heuristic(player1, player2):
     with open("weights.txt", "r") as file:
         weights = json.load(file)
-    return (weights[0] * heuristic1(player1, player2) +
-            weights[1] * heuristic2(player1, player2))
+    s0 = heuristic1(player1, player2)
+    s1, s2, p1p2_house_wise_card_difference = heuristic3(player1, player2)
+    return (weights[0] * s0 +
+            weights[1] * s1 +
+            weights[2] * s2 +
+            p1p2_house_wise_card_difference)
 
 
 def heuristic1(player1, player2):
     player1_score = test(player1)
     player2_score = test(player2)
     return player1_score - player2_score
+
+
+def heuristic3(player1, player2):
+    # Simple evaluation: maximize player's cards minus opponent's cards
+    # return sum(len(v) for v in player1.get_cards().values()) - sum(len(v) for v in player2.get_cards().values())
+    family_max_count = {'Stark': 8, 'Greyjoy': 7, 'Lannister': 6, 'Targaryen': 5, 'Baratheon': 4, 'Tyrell': 3,
+                        'Tully': 2}
+    p1cards = player1.get_cards()
+    p2cards = player2.get_cards()
+    p1banners = player1.get_banners()
+    p2banners = player2.get_banners()
+    p1wins = 0
+    p2wins = 0
+    p1close = 0
+    p2close = 0
+    p1p2_house_wise_card_difference = 0
+
+    for key, (value1, value2) in zip(p1cards.keys(), zip(p1cards.values(), p2cards.values())):
+        len1 = len(value1)
+        len2 = len(value2)
+        dist1_to_win = len1 - (family_max_count[key] // 2)  # - (1 * len1 % 2)
+        dist2_to_win = len2 - (family_max_count[key] // 2)  # - (1 * len1 % 2)
+
+        if dist1_to_win > 0:
+            p1wins += 1
+        elif dist2_to_win > 0:
+            p2wins += 1
+
+        elif dist1_to_win == dist2_to_win == 0 and family_max_count[key] % 2 == 0:
+            if p1banners[key] == 1:
+                p1wins += 1
+            else:
+                p2wins += 1
+
+        elif (family_max_count[key] % 2 == 0 and dist1_to_win == -1 and dist2_to_win < -1) or (
+                family_max_count[key] % 2 == 1 and dist1_to_win == 0 and dist2_to_win < 0):
+            p1close += 1
+        elif (family_max_count[key] % 2 == 0 and dist2_to_win == -1 and dist1_to_win < -1) or (
+                family_max_count[key] % 2 == 1 and dist2_to_win == 0 and dist1_to_win < 0):
+            p2close += 1
+        else:
+            p1p2_house_wise_card_difference += (len1 - len2)
+
+    s1 = p1wins - p2wins
+    s2 = p1close - p2close
+    w1 = 10
+    w2 = 7
+
+    # return (s1 * w1) + (s2 * w2) + p1p2_house_wise_card_difference
+    return s1, s2, p1p2_house_wise_card_difference
 
 
 def heuristic2(player1, player2):
@@ -276,10 +330,49 @@ def get_valid_moves(cards):
     return moves
 
 
+def get_valid_ramsay(cards):
+    '''
+    This function gets the possible moves for Ramsay.
+
+    Parameters:
+        cards (list): list of Card objects
+
+    Returns:
+        moves (list): list of possible moves
+    '''
+
+    moves = []
+
+    for card in cards:
+        moves.append(card.get_location())
+
+    return moves
+
+
+def get_valid_jon_sandor_jaqan(cards):
+    '''
+    This function gets the possible moves for Jon Snow, Sandor Clegane, and Jaqen H'ghar.
+
+    Parameters:
+        cards (list): list of Card objects
+
+    Returns:
+        moves (list): list of possible moves
+    '''
+
+    moves = []
+
+    for card in cards:
+        if card.get_name() != 'Varys':
+            moves.append(card.get_location())
+
+    return moves
+
+
 def alpha_beta_search(cards, player1, player2, companion_cards, depth, alpha, beta, is_maximizing):
     moves = get_valid_moves(cards)
     if depth == 0 or not moves:
-        return heuristic1(player1, player2), None
+        return heuristic(player1, player2), None
     best_move = None
     if is_maximizing:
         max_value = float('-inf')
@@ -330,19 +423,45 @@ def alpha_beta_search(cards, player1, player2, companion_cards, depth, alpha, be
 def companion_get_move(cards, player1, player2, companion_cards):
     print(companion_cards)
     if companion_cards:
-        if len(companion_cards) == 2 and 'Jaqen' in companion_cards.keys() and 'Melisandre' in companion_cards.keys():
-            print("flag")
-            return 1, ['Melisandre']
+        # if len(companion_cards) == 2 and 'Jaqen' in companion_cards.keys() and 'Melisandre' in companion_cards.keys():
+        #     print("flag")
+        #     return 1, ['Melisandre']
+        # if len(companion_cards) == 2:
+        #     selected_companion = random.choice(list(companion_cards.keys()))  # Randomly select a companion card
+        #     move = [selected_companion]  # Add the companion card to the move list
+        #     choices = companion_cards[selected_companion][
+        #         'Choice']  # Get the number of choices required by the companion card
+        #
+        #     if choices == 1:  # For cards like Jon Snow
+        #         move.append(random.choice(get_valid_jon_sandor_jaqan(cards)))
+        #
+        #     elif choices == 2:  # For cards like Ramsay
+        #         valid_moves = get_valid_ramsay(cards)
+        #
+        #         if len(valid_moves) >= 2:
+        #             move.extend(random.sample(valid_moves, 2))
+        #
+        #         else:
+        #             move.extend(valid_moves)  # If not enough moves, just use what's available
+        #
+        #
+        #     elif choices == 3:  # Special case for Jaqen with an additional companion card selection
+        #         valid_moves = get_valid_jon_sandor_jaqan(cards)
+        #
+        #         if len(valid_moves) >= 2 and len(companion_cards) > 0:
+        #             move.extend(random.sample(valid_moves, 2))
+        #             move.append(random.choice(list(companion_cards.keys())))
+        #
+        #         else:
+        #             # If there aren't enough moves or companion cards, just return what's possible
+        #             move.extend(valid_moves)
+        #             move.append(random.choice(list(companion_cards.keys())) if companion_cards else None)
+        #
+        #     return 0, move
 
         available_companions = companion_cards
         best_move = None
         best_eval = float('-inf')
-
-        # Helper function to evaluate a simulated state
-        def evaluate_simulation(new_cards, new_p1, new_p2):
-            # Update banners based on new card positions (if necessary)
-            # This might require recalculating banners similar to how set_banners works
-            return heuristic1(new_p1, new_p2)
 
         # Check each available companion
         for companion in available_companions:
@@ -413,8 +532,26 @@ def companion_get_move(cards, player1, player2, companion_cards):
                         best_move = ['Sandor', loc]
 
             elif companion == 'Jaqen':
-                del new_companion_cards['Jaqen']
-                print("jaqen")
+                # del new_companion_cards['Jaqen']
+                # print("jaqen")
+                # # Jaqen: [companion, loc1, loc2, companion_to_remove]
+                # valid_kills = [c.get_location() for c in cards if c.get_name() != 'Varys']
+                # for kill1, kill2 in combinations(valid_kills, 2):
+                #     for comp_remove in companion_cards.keys():
+                #         new_cards = copy.deepcopy(cards)
+                #         new_cards = [c for c in new_cards if c.get_location() not in (kill1, kill2)]
+                #         new_comp = copy.deepcopy(companion_cards)
+                #         new_comp[comp_remove]['Choice'] = 0  # Remove companion
+                #         # current_eval = evaluate_simulation(new_cards, player1, player2)
+                #         remove_unusable_companion_cards(new_cards, new_companion_cards)
+                #
+                #         current_eval, _ = alpha_beta_search(new_cards, player1, player2, new_companion_cards, 1,
+                #                                             float("-inf"), float("inf"),
+                #                                             False)
+                #         # current_eval = heuristic2(player1, player2)
+                #         if current_eval > best_eval:
+                #             best_eval = current_eval
+                #             best_move = ['Jaqen', kill1, kill2, comp_remove]
                 # Jaqen: [companion, loc1, loc2, companion_to_remove]
                 valid_kills = [c.get_location() for c in cards if c.get_name() != 'Varys']
                 for kill1, kill2 in combinations(valid_kills, 2):
@@ -423,13 +560,7 @@ def companion_get_move(cards, player1, player2, companion_cards):
                         new_cards = [c for c in new_cards if c.get_location() not in (kill1, kill2)]
                         new_comp = copy.deepcopy(companion_cards)
                         new_comp[comp_remove]['Choice'] = 0  # Remove companion
-                        # current_eval = evaluate_simulation(new_cards, player1, player2)
-                        remove_unusable_companion_cards(new_cards, new_companion_cards)
-
-                        current_eval, _ = alpha_beta_search(new_cards, player1, player2, new_companion_cards, 1,
-                                                            float("-inf"), float("inf"),
-                                                            False)
-                        # current_eval = heuristic2(player1, player2)
+                        current_eval = heuristic(player1, player2)
                         if current_eval > best_eval:
                             best_eval = current_eval
                             best_move = ['Jaqen', kill1, kill2, comp_remove]
