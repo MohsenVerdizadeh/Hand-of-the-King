@@ -14,7 +14,7 @@ My AI course's final project implements an AI agent for the **Hand of the King**
 ## 🚀 Installation
 1. Clone this repository:
    ```bash
-   git clone 
+   git clone https://github.com/MohsenVerdizadeh/Hand-of-the-King.git
    cd Hand-of-the-King
    ```
 2. Install dependencies (if any):
