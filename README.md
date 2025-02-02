@@ -58,5 +58,5 @@ Feel free to contribute! Open an issue or submit a pull request.
 This project is licensed under the **MIT License**.  
 
 ## 📬 Contact
-For any questions, contact 📧 Mohsenverdizadehkohi@gmail.com or visit 🔗 [https://github.com/MohsenVerdizadeh].
+For any questions, contact 📧 Mohsenverdizadehkohi@gmail.com.
 
