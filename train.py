@@ -3,11 +3,8 @@ import json
 import random
 import importlib
 from argparse import Namespace
-from concurrent.futures import ThreadPoolExecutor
-from random import choice
 
 
-# Example Heuristic Functions
 def simulate_game(weights):
     with open('weights.txt', "w") as file:
         json.dump(weights, file)
@@ -66,13 +63,9 @@ def mutate(offspring, mutation_rate=0.1):
     return offspring
 
 
-def genetic_algorithm(pop_size=10, generations=5):
-    population = initialize_population(pop_size)
+def genetic_algorithm(pop_size=10, generations=3):
     with open("result.txt", "r") as file:
-        temp = json.load(file)
-    temp.append(population)
-    with open("result.txt", "w") as file:
-        json.dump(temp, file)
+        population = json.load(file)[1]
     for gen in range(generations):
         fitness_scores = [evaluate_fitness(weights) for weights in population]
         parents = select_parents(population, fitness_scores, pop_size // 2)

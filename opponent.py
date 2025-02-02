@@ -1,37 +1,26 @@
-import random
 
 import copy
 
-import math
-from itertools import combinations, permutations
+from itertools import combinations
 
 from main import remove_unusable_companion_cards, house_card_count
 
 def calculate_adaptive_depth(cards, companion_cards, base_depth=6, max_depth=10):
-    """
-    Dynamically adjusts the depth based on game complexity.
 
-    :param cards: Current board state.
-    :param companion_cards: Available companion cards.
-    :param base_depth: Minimum search depth.
-    :param max_depth: Maximum search depth.
-    :return: Adaptive depth value.
-    """
     num_moves = len(get_valid_moves(cards))
-    num_companions = len(companion_cards)
 
-    if num_moves > 7:  # Early game: lots of options → search shallow
+
+    if num_moves > 7:
         return base_depth
-    elif num_moves > 5:  # Mid game: fewer options → search deeper
+    elif num_moves > 5:
         return min(base_depth + 1, max_depth)
-    elif num_moves > 3:  # Late game: deeper search
+    elif num_moves > 3:
         return min(base_depth + 2, max_depth)
-    else:  # Endgame: search as deep as possible
+    else:
         return max_depth
 
 def heuristic2(player1, player2):
-    # Simple evaluation: maximize player's cards minus opponent's cards
-    # return sum(len(v) for v in player1.get_cards().values()) - sum(len(v) for v in player2.get_cards().values())
+
     family_max_count = {'Stark': 8, 'Greyjoy': 7, 'Lannister': 6, 'Targaryen': 5, 'Baratheon': 4, 'Tyrell': 3,
                         'Tully': 2}
     p1cards = player1.get_cards()
@@ -84,33 +73,26 @@ def find_card(cards, location):
 
 
 def make_move(cards, move, player):
-    # Get the location of Varys
     varys_location = find_varys(cards)
 
-    # Find the row and column of Varys
     varys_row, varys_col = varys_location // 6, varys_location % 6
 
-    # Get the row and column of the move
     move_row, move_col = move // 6, move % 6
 
-    # Find the selected card
     selected_card = find_card(cards, move)
 
     removing_cards = []
 
-    # Find the cards that should be removed
     for i in range(len(cards)):
         if cards[i].get_name() == 'Varys':
             varys_index = i
             continue
 
-        # If the card is between Varys and the selected card and has the same house as the selected card
         if varys_row == move_row and varys_col < move_col:
             if cards[i].get_location() // 6 == varys_row and varys_col < cards[i].get_location() % 6 < move_col and \
                     cards[i].get_house() == selected_card.get_house():
                 removing_cards.append(cards[i])
 
-                # Add the card to the player's cards
                 player.add_card(cards[i])
 
         elif varys_row == move_row and varys_col > move_col:
@@ -118,7 +100,6 @@ def make_move(cards, move, player):
                     cards[i].get_house() == selected_card.get_house():
                 removing_cards.append(cards[i])
 
-                # Add the card to the player's cards
                 player.add_card(cards[i])
 
         elif varys_col == move_col and varys_row < move_row:
@@ -126,7 +107,6 @@ def make_move(cards, move, player):
                     cards[i].get_house() == selected_card.get_house():
                 removing_cards.append(cards[i])
 
-                # Add the card to the player's cards
                 player.add_card(cards[i])
 
         elif varys_col == move_col and varys_row > move_row:
@@ -134,74 +114,56 @@ def make_move(cards, move, player):
                     cards[i].get_house() == selected_card.get_house():
                 removing_cards.append(cards[i])
 
-                # Add the card to the player's cards
                 player.add_card(cards[i])
 
-    # Add the selected card to the player's cards
     player.add_card(selected_card)
 
-    # Set the location of Varys
     cards[varys_index].set_location(move)
 
-    # Remove the cards
     for card in removing_cards:
         cards.remove(card)
 
-    # Remove the selected card
     cards.remove(selected_card)
 
-    # Return the selected card's house
     return selected_card.get_house()
 
 
 def set_banners(player1, player2, last_house, last_turn):
-    # Get the cards of the players
     player1_cards = player1.get_cards()
     player2_cards = player2.get_cards()
 
-    # Get the banners of the players
     player1_banners = player1.get_banners()
     player2_banners = player2.get_banners()
 
     for house in player1_cards.keys():
-        # Flag to keep track of the selected player
         selected_player = None
 
-        # The player with the more cards of a house gets the banner
         if len(player1_cards[house]) > len(player2_cards[house]):
-            # Give the banner to player 1
             selected_player = 1
 
         elif len(player2_cards[house]) > len(player1_cards[house]):
-            # Give the banner to player 2
             selected_player = 2
 
-        # If the number of cards is the same, the player who chose the last card of that house gets the banner
         else:
             if last_house == house:
                 if last_turn == 1:
-                    # Give the banner to player 1
                     selected_player = 1
 
                 else:
-                    # Give the banner to player 2
                     selected_player = 2
 
-            else:  # If the last card was not of the same house
-                if player1_banners[house] > player2_banners[house]:  # If player 1 has more banners of the house
+            else:
+                if player1_banners[house] > player2_banners[house]:
                     selected_player = 1
 
-                elif player2_banners[house] > player1_banners[house]:  # If player 2 has more banners of the house
+                elif player2_banners[house] > player1_banners[house]:
                     selected_player = 2
 
-        # If player 1 should get the banner
         if selected_player == 1:
-            # Give the banner to player 1
             player1.get_house_banner(house)
             player2.remove_house_banner(house)
 
         elif selected_player == 2:
-            # Give the banner to player 2
             player1.remove_house_banner(house)
             player2.get_house_banner(house)
 
@@ -215,15 +177,12 @@ def find_varys(cards):
 
 
 def get_valid_moves(cards):
-    # Get the location of Varys
     varys_location = find_varys(cards)
 
-    # Get the row and column of Varys
     varys_row, varys_col = varys_location // 6, varys_location % 6
 
     moves = []
 
-    # Get the cards in the same row or column as Varys
     for card in cards:
         if card.get_name() == 'Varys':
             continue
@@ -294,17 +253,14 @@ def companion_get_move(cards, player1, player2, companion_cards):
         best_eval = float('-inf')
 
 
-        # Check each available companion
         for companion in available_companions:
             new_companion_cards = copy.deepcopy(available_companions)
             if companion == 'Jon':
-                # Jon Snow: [companion_name, location]
                 valid_targets = [card for card in cards if card.get_name() != 'Varys']
                 for card in valid_targets:
                     loc = card.get_location()
-                    house = card.get_house()  # Assuming get_house() exists
+                    house = card.get_house()
                     new_p1 = copy.deepcopy(player1)
-                    # Simulate adding two to the house (append dummy entries)
                     new_p1.get_cards()[house].extend([None, None])
                     current_eval = heuristic2(new_p1, player2)
                     if current_eval > best_eval:
@@ -312,7 +268,6 @@ def companion_get_move(cards, player1, player2, companion_cards):
                         best_move = ['Jon', loc]
 
             elif companion == 'Gendry':
-                # Gendry: [companion_name]
                 new_p1 = copy.deepcopy(player1)
                 new_p1.get_cards()['Baratheon'].append(None)  # Add one Baratheon
                 current_eval = heuristic2(new_p1, player2)
@@ -321,18 +276,14 @@ def companion_get_move(cards, player1, player2, companion_cards):
                     best_move = ['Gendry']
 
             elif companion == 'Ramsay':
-                # Ramsay: [companion, loc1, loc2]
                 del new_companion_cards['Ramsay']
-                print("ramsy")
                 valid_locations = [c.get_location() for c in cards]
                 for loc1, loc2 in combinations(valid_locations, 2):
                     new_cards = copy.deepcopy(cards)
-                    # Swap positions
                     c1 = next(c for c in new_cards if c.get_location() == loc1)
                     c2 = next(c for c in new_cards if c.get_location() == loc2)
                     c1.set_location(loc2)
                     c2.set_location(loc1)
-                    # Evaluate new board state
                     remove_unusable_companion_cards(new_cards, new_companion_cards)
 
                     current_eval, _ = alpha_beta_search(new_cards, player1, player2, new_companion_cards, 2,
@@ -344,15 +295,12 @@ def companion_get_move(cards, player1, player2, companion_cards):
 
             elif companion == 'Sandor':
                 del new_companion_cards['Sandor']
-                print("sandor")
-                # Sandor: [companion, location]
                 valid_targets = [c for c in cards if c.get_name() != 'Varys']
                 for card in valid_targets:
                     loc = card.get_location()
                     new_cards = copy.deepcopy(cards)
                     new_cards.remove(next(c for c in new_cards if c.get_location() == loc))
-                    # Simulate killing the card
-                    # current_eval = evaluate_simulation(new_cards, player1, player2)
+
                     remove_unusable_companion_cards(new_cards, new_companion_cards)
 
                     current_eval, _ = alpha_beta_search(new_cards, player1, player2, new_companion_cards, 3,
@@ -364,8 +312,6 @@ def companion_get_move(cards, player1, player2, companion_cards):
 
             elif companion == 'Jaqen':
                 del new_companion_cards['Jaqen']
-                print("jaqen")
-                # Jaqen: [companion, loc1, loc2, companion_to_remove]
                 valid_kills = [c.get_location() for c in cards if c.get_name() != 'Varys']
                 for kill1, kill2 in combinations(valid_kills, 2):
                     for comp_remove in companion_cards.keys():
@@ -373,7 +319,6 @@ def companion_get_move(cards, player1, player2, companion_cards):
                         new_cards = [c for c in new_cards if c.get_location() not in (kill1, kill2)]
                         new_comp = copy.deepcopy(companion_cards)
                         new_comp[comp_remove]['Choice'] = 0  # Remove companion
-                        # current_eval = evaluate_simulation(new_cards, player1, player2)
                         remove_unusable_companion_cards(new_cards, new_companion_cards)
 
                         current_eval, _ = alpha_beta_search(new_cards, player1, player2, new_companion_cards, 1,
@@ -386,11 +331,6 @@ def companion_get_move(cards, player1, player2, companion_cards):
 
             elif companion == 'Melisandre':
                 del new_companion_cards['Melisandre']
-
-                print("melisandra")
-                # Melisandre: [companion]
-                # current_eval = heuristic(player1, player2)
-
                 current_eval, _ = alpha_beta_search(cards, player1, player2, new_companion_cards, 3, float("-inf"),
                                                     float("inf"), True)
                 if current_eval > best_eval:
@@ -408,8 +348,6 @@ def get_move(cards, player1, player2, companion_cards, choose_companion):
         return move
 
     else:
-        # Normal move, choose from valid moves
         depth = calculate_adaptive_depth(cards, companion_cards)
-        print(depth)
         _, move = alpha_beta_search(cards, player1, player2, companion_cards, depth, float('-inf'), float('inf'), True)
         return move
